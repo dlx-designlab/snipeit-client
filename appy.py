@@ -10,8 +10,8 @@ app.secret_key = os.urandom(24)
 
 # === Snipe-IT OAuth config ===
 SNIPEIT_BASE_URL = "https://dlx-it-manager-g2hcc6gxe4hmdecs.japanwest-01.azurewebsites.net/"
-CLIENT_ID = "00000000000000000000000000000000"
-CLIENT_SECRET = "????"
+CLIENT_ID = "000000"
+CLIENT_SECRET = "000000"
 REDIRECT_URI = "https://silver-waddle-v6pvjg57v9xcpg79-5000.app.github.dev/callback"  # must match Snipe-IT exactly
 
 # === Routes ===
@@ -75,12 +75,33 @@ def me():
         "Accept": "application/json"
     }
 
+    # Get user info
     r = requests.get(
         f"{SNIPEIT_BASE_URL}/api/v1/users/me",
         headers=headers
     )
-
-    return r.json()
+    
+    if r.status_code != 200:
+        return f"Error fetching user info: {r.text}", 400
+    
+    user_data = r.json()
+    user_id = user_data.get("id")
+    
+    # Get assets checked out to this user
+    assets_response = requests.get(
+        f"{SNIPEIT_BASE_URL}/api/v1/users/{user_id}/assets",
+        headers=headers
+    )
+    
+    assets_data = assets_response.json() if assets_response.status_code == 200 else {"error": "Could not fetch assets"}
+    
+    # Combine the data
+    result = {
+        "user_info": user_data,
+        "checked_out_assets": assets_data
+    }
+    
+    return result
 
 
 @app.route("/logout")
